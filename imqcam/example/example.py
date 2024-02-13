@@ -19,7 +19,7 @@ def count_letters(word):
 
 @graph
 def example_graph():
-    count_letters(multiply_the_word())
+    count_letters(multiply_the_word())  # pylint: disable=no-value-for-parameter
 
 
 example_job = example_graph.to_job(
@@ -35,33 +35,33 @@ example_job = example_graph.to_job(
     },
 )
 
+pod_per_op_job = example_graph.to_job(
+    name="pod_per_op_job",
+    description="""
+    Example job that uses the `k8s_job_executor` to run each op in a separate pod.
+    """,
+    executor_def=k8s_job_executor,
+    config={
+        "ops": {
+            "multiply_the_word": {
+                "inputs": {"word": "test"},
+                "config": {"factor": 2},
+            },
+        },
+        "execution": {
+            "config": {
+                "image_pull_policy": "Always",
+            }
+        },
+    },
+)
 
-# pod_per_op_job = example_graph.to_job(
-#     name="pod_per_op_job",
-#     description="""
-#     Example job that uses the `k8s_job_executor` to run each op in a separate pod.
-#         
-#     **NOTE:** this job uses the s3_pickle_io_manager, which requires
-#     [AWS credentials](https://docs.dagster.io/deployment/guides/aws#using-s3-for-io-management).
-#     """,
-#     resource_defs={"s3": s3_resource, "io_manager": s3_pickle_io_manager},
-#     executor_def=k8s_job_executor,
-#     config=config_from_files(
-#         [
-#             file_relative_path(__file__, os.path.join("..", "run_config", "k8s.yaml")),
-#             file_relative_path(
-#                 __file__, os.path.join("..", "run_config", "pipeline.yaml")
-#             ),
-#         ]
-#     ),
-# )
-# 
 # pod_per_op_celery_job = example_graph.to_job(
 #     name="pod_per_op_celery_job",
 #     description="""
 #     Example job that uses the `celery_k8s_job_executor` to send ops to Celery workers, which
 #     launch them in individual pods.
-#         
+#
 #     **NOTE:** this job uses the s3_pickle_io_manager, which
 #     requires [AWS credentials](https://docs.dagster.io/deployment/guides/aws#using-s3-for-io-management).
 #     It also requires enabling the [CeleryK8sRunLauncher](https://docs.dagster.io/deployment/guides/kubernetes/deploying-with-helm-advanced) in the Helm
@@ -80,8 +80,8 @@ example_job = example_graph.to_job(
 #         ]
 #     ),
 # )
-# 
-# 
+#
+#
 @repository
 def example_repo():
     return [
