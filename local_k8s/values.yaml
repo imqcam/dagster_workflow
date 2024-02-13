@@ -48,8 +48,10 @@ dagster-user-deployments:
       # identical arguments but can reload its definitions from within the Dagster UI without
       # needing to restart the user code deployment pod.
       dagsterApiGrpcArgs:
-        - "--python-file"
-        - "/imqcam/example/repo.py"
+        - "--module-name"
+        - "imqcam"
+        - "--attribute"
+        - "defs"
       port: 3030
 
       # Whether or not to include configuration specified for this user code deployment in the pods
@@ -104,7 +106,10 @@ dagster-user-deployments:
       # volumes:
       #   - name: my-volume
       #     configMap: my-config-map
-      volumes: []
+      volumes:
+        - name: dagster-local-data
+          persistentVolumeClaim:
+            claimName: imqcam-local-data
 
       # Additional volume mounts that should be included. See:
       # See: https://v1-18.docs.kubernetes.io/docs/reference/generated/kubernetes-api/v1.18/#volumemount-v1-core
@@ -115,7 +120,9 @@ dagster-user-deployments:
       #   - name: test-volume
       #     mountPath: /opt/dagster/test_folder
       #     subPath: test_file.yaml
-      volumeMounts: []
+      volumeMounts:
+        - name: dagster-local-data
+          mountPath: /tmp/dagster_local_data
 
       # Init containers to run before the main container. See:
       # https://kubernetes.io/docs/concepts/workloads/pods/init-containers/

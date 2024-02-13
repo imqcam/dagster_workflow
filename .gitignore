@@ -1,3 +1,8 @@
+# The local k8s deployments scratch data location
+local_k8s/imqcam_local_data/*
+
+*.DS_Store
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

@@ -30,6 +30,12 @@ Create a namespace to install dagster in:
     kubectl create namespace dagster
     kubectl get namespaces
 
+Create the PersistentVolume for Dagster's FilesystemIOManager to use:
+
+    kubectl apply -f local_data_volume_and_claim.yaml
+    kubectl get pv -n dagster
+    kubectl get pvc -n dagster
+
 Add the Dagster Helm chart repo:
 
     helm repo add dagster https://dagster-io.github.io/helm
@@ -45,6 +51,14 @@ Open the webserver:
     kubectl -n dagster port-forward [dagster-webserver-pod-name] 8080:80
 
 And then pull up [localhost:8080](http://localhost:8080/)
+
+When you make changes to the code location you need to rebuild and push its Docker image, and then you need to restart the deployment for the code location server in k8s. Here's how to do that:
+
+    cd dagster_workflow/imqcam
+    docker build -t openmsi/testing_k8s_dagster . && docker login && docker push openmsi/testing_k8s_dagster
+    kubectl rollout restart deployment dagster-dagster-user-deployments-imqcam-example-1 -n dagster
+
+When that's done running you should be able to reload the code location from the UI (or it might happen automatically) to see your new code location's jobs, etc. If there's a bug in the code you may need to debug the pod running the code location server.
 
 To get the default Helm values file for dagster:
 

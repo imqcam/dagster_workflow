@@ -9,6 +9,9 @@ nodes:
     nodeRegistration:
       kubeletExtraArgs:
         node-labels: "node=worker_1"
+  extraMounts:
+    - hostPath: ./imqcam_local_data
+      containerPath: /tmp/imqcam_local_data
 - role: worker
   kubeadmConfigPatches:
   - |
@@ -16,3 +19,6 @@ nodes:
     nodeRegistration:
       kubeletExtraArgs:
         node-labels: "node=worker_2"
+  extraMounts:
+    - hostPath: ./imqcam_local_data
+      containerPath: /tmp/imqcam_local_data
