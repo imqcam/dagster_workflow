@@ -12,5 +12,8 @@ RUN pip install \
     dagster-celery[flower,redis,kubernetes] \
     dagster-celery-k8s
 
-# Get example pipelines
-COPY example_repo/ /
+# Bake in Python code
+COPY . /imqcam
+
+# Remove this dockerfile from the image
+RUN rm /imqcam/Dockerfile

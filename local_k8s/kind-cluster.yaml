@@ -16,10 +16,3 @@ nodes:
     nodeRegistration:
       kubeletExtraArgs:
         node-labels: "node=worker_2"
-- role: worker
-  kubeadmConfigPatches:
-  - |
-    kind: JoinConfiguration
-    nodeRegistration:
-      kubeletExtraArgs:
-        node-labels: "node=worker_3"
