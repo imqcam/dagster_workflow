@@ -68,6 +68,10 @@ To edit an existing installation:
 
     helm upgrade -f values.yaml dagster dagster/dagster -n dagster --debug
 
+Periodically remove "Completed" pods with:
+
+    kubectl get pods -n dagster --field-selector=status.phase==Succeeded -o=name | xargs kubectl delete -n dagster
+
 Uninstall dagster and delete the entire cluster with:
 
     helm uninstall dagster -n dagster

@@ -107,7 +107,7 @@ dagster-user-deployments:
       #   - name: my-volume
       #     configMap: my-config-map
       volumes:
-        - name: dagster-local-data
+        - name: imqcam-local-data
           persistentVolumeClaim:
             claimName: imqcam-local-data
 
@@ -121,8 +121,8 @@ dagster-user-deployments:
       #     mountPath: /opt/dagster/test_folder
       #     subPath: test_file.yaml
       volumeMounts:
-        - name: dagster-local-data
-          mountPath: /tmp/dagster_local_data
+        - name: imqcam-local-data
+          mountPath: /tmp/imqcam_local_data
 
       # Init containers to run before the main container. See:
       # https://kubernetes.io/docs/concepts/workloads/pods/init-containers/
@@ -173,3 +173,189 @@ dagster-user-deployments:
 
       service:
         annotations: {}
+
+####################################################################################################
+# Run Launcher: Configuration for run launcher
+####################################################################################################
+runLauncher:
+  # Type can be one of [K8sRunLauncher, CeleryK8sRunLauncher, CustomRunLauncher]
+  type: CeleryK8sRunLauncher # K8sRunLauncher
+
+  config:
+    # This configuration will only be used if the CeleryK8sRunLauncher is selected
+    celeryK8sRunLauncher:
+      # Change with caution! If you're using a fixed tag for pipeline run images, changing the
+      # image pull policy to anything other than "Always" will use a cached/stale image, which is
+      # almost certainly not what you want.
+      imagePullPolicy: "Always"
+
+      # The Celery workers can be deployed with a fixed image (no user code included)
+      image:
+        # When a tag is not supplied for a Dagster provided image,
+        # it will default as the Helm chart version.
+        repository: "docker.io/dagster/dagster-celery-k8s"
+        tag: ~
+        pullPolicy: Always
+
+      # The Kubernetes namespace where new jobs will be launched.
+      # By default, the release namespace is used.
+      jobNamespace: ~
+
+      # Support overriding the name prefix of Celery worker pods
+      nameOverride: "celery-workers"
+
+      # Additional config options for Celery, applied to all queues.
+      # These can be overridden per-queue below.
+      # For available options, see:
+      # https://docs.celeryq.dev/en/stable/userguide/configuration.html
+      configSource: {}
+
+      # Additional Celery worker queues can be configured here. When overriding, be sure to
+      # provision a "dagster" worker queue, as this is the default queue used by Dagster.
+      #
+      # Optionally, labels and node selectors can be set on the Celery queue's workers.
+      # Specifying a queue's node selector will override any existing node selector defaults.
+      # configSource will be merged with the shared configSource above.
+      workerQueues:
+        - name: "dagster"
+          replicaCount: 2
+          labels: {}
+          nodeSelector: {}
+          configSource: {}
+          additionalCeleryArgs: []
+
+      # Additional environment variables to set on the celery/job containers
+      # A Kubernetes ConfigMap will be created with these environment variables. See:
+      # https://kubernetes.io/docs/concepts/configuration/configmap/
+      #
+      # Example:
+      #
+      # env:
+      #   ENV_ONE: one
+      #   ENV_TWO: two
+      env: {}
+
+      # Additional environment variables can be retrieved and set from ConfigMaps. See:
+      # https://kubernetes.io/docs/tasks/configure-pod-container/configure-pod-configmap/#configure-all-key-value-pairs-in-a-configmap-as-container-environment-variables
+      #
+      # Example:
+      #
+      # envConfigMaps:
+      #   - name: config-map
+      envConfigMaps: []
+
+      # Additional environment variables can be retrieved and set from Secrets. See:
+      # https://kubernetes.io/docs/concepts/configuration/secret/#use-case-as-container-environment-variables
+      #
+      # Example:
+      #
+      # envSecrets:
+      #   - name: secret
+      envSecrets: []
+
+      annotations: {}
+
+      # Sets a node selector as a default for all Celery queues.
+      #
+      # See:
+      # https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#nodeselector
+      nodeSelector: {}
+
+      # Support affinity and tolerations for Celery pod assignment. See:
+      # https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#affinity-and-anti-affinity
+      # https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/
+      affinity: {}
+      tolerations: []
+      podSecurityContext: {}
+      securityContext: {}
+
+      # Specify resources.
+      # Example:
+      #
+      # resources:
+      #   limits:
+      #     cpu: 100m
+      #     memory: 128Mi
+      #   requests:
+      #     cpu: 100m
+      #     memory: 128Mi
+      resources: {}
+
+      # Override the default K8s scheduler
+      # schedulerName: ~
+
+      # If `livenessProbe` does not contain `exec` field, then we will default to using:
+      # exec:
+      #   command:
+      #     - /bin/sh
+      #     - -c
+      #     - dagster-celery status -A dagster_celery_k8s.app -y {{ $.Values.global.dagsterHome }}/celery-config.yaml | grep "${HOSTNAME}:.*OK"
+      livenessProbe:
+        initialDelaySeconds: 15
+        periodSeconds: 10
+        timeoutSeconds: 10
+        successThreshold: 1
+        failureThreshold: 3
+
+      # Additional volumes that should be included in the Job's Pod. See:
+      # https://v1-18.docs.kubernetes.io/docs/reference/generated/kubernetes-api/v1.18/#volume-v1-core
+      #
+      # Example:
+      #
+      # volumes:
+      #   - name: my-volume
+      #     configMap: my-config-map
+      volumes:
+        - name: imqcam-local-data
+          persistentVolumeClaim:
+            claimName: imqcam-local-data
+
+      # Additional volume mounts that should be included in the container in the Job's Pod. See:
+      # See: https://v1-18.docs.kubernetes.io/docs/reference/generated/kubernetes-api/v1.18/#volumemount-v1-core
+      #
+      # Example:
+      #
+      # volumeMounts:
+      #   - name: test-volume
+      #     mountPath: /opt/dagster/test_folder
+      #     subPath: test_file.yaml
+      volumeMounts:
+        - name: imqcam-local-data
+          mountPath: /tmp/imqcam_local_data
+
+      # Additional labels that should be included in the Job's Pod. See:
+      # https://kubernetes.io/docs/concepts/overview/working-with-objects/labels
+      #
+      # Example:
+      # labels:
+      #   my_label_key: my_label_value
+      labels: {}
+
+      # Whether the launched Kubernetes Jobs and Pods should fail if the Dagster run fails.
+      failPodOnRunFailure: false
+
+####################################################################################################
+# RabbitMQ: Configuration values for rabbitmq. Only one of RabbitMQ / Redis should be enabled.
+####################################################################################################
+rabbitmq:
+  enabled: true
+
+  image:
+    repository: "bitnami/rabbitmq"
+    tag: "3.8.12"
+    pullPolicy: IfNotPresent
+
+  rabbitmq:
+    username: test
+    password: test
+
+  service:
+    port: 5672
+
+  # https://github.com/helm/charts/issues/17250#issuecomment-533444837
+  volumePermissions:
+    enabled: true
+    image:
+      repository: bitnami/minideb
+      tag: stretch
+      pullPolicy: IfNotPresent
