@@ -16,7 +16,7 @@ spec:
     namespace: maggie-imqcam-dagster
   nfs:
     server: sciserver-fs1
-    path: /srv/vc_crypt/IMQCAM
+    path: /srv/vc_crypt/IMQCAM/dagster_filesystem_io
   persistentVolumeReclaimPolicy: Retain
 ---
 # The imqcam-dagster-io-data PersistentVolumeClaim

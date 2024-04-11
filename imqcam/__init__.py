@@ -7,7 +7,7 @@ from dagster import (
 )
 from .example.example import example_job, pod_per_op_celery_job
 
-io_manager = FilesystemIOManager(base_dir="/tmp/imqcam_local_data")
+io_manager = FilesystemIOManager(base_dir="/tmp/imqcam_filesystem_io_data")
 
 defs = Definitions(
     jobs=[example_job, pod_per_op_celery_job],

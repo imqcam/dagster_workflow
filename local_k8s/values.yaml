@@ -321,7 +321,7 @@ runLauncher:
       #     subPath: test_file.yaml
       volumeMounts:
         - name: imqcam-local-data
-          mountPath: /tmp/imqcam_local_data
+          mountPath: /tmp/imqcam_filesystem_io_data
 
       # Additional labels that should be included in the Job's Pod. See:
       # https://kubernetes.io/docs/concepts/overview/working-with-objects/labels
