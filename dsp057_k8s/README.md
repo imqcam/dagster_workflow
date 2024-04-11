@@ -1,0 +1,1 @@
+kubectl create namespace maggie-imqcam-dagster

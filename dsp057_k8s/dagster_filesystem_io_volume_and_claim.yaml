@@ -1,0 +1,33 @@
+# The imqcam-dagster-io-data PersistentVolume
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: imqcam-dagster-io-data
+  namespace: maggie-imqcam-dagster
+spec:
+  capacity:
+    storage: 5Gi
+  accessModes:
+    - ReadWriteMany
+  claimRef:
+    apiVersion: v1
+    kind: PersistentVolumeClaim
+    name: imqcam-dagster-io-data
+    namespace: maggie-imqcam-dagster
+  nfs:
+    server: sciserver-fs1
+    path: /srv/vc_crypt/IMQCAM
+  persistentVolumeReclaimPolicy: Retain
+---
+# The imqcam-dagster-io-data PersistentVolumeClaim
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: imqcam-dagster-io-data
+  namespace: maggie-imqcam-dagster
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 5Gi

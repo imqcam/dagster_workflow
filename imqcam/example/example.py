@@ -1,4 +1,4 @@
-"And example graph that just calls two ops, run as three different types of job"
+"An example graph that just calls two ops, run as three different types of job"
 
 # imports
 from collections import Counter
