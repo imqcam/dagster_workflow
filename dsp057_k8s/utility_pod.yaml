@@ -6,12 +6,14 @@ metadata:
   namespace: maggie-imqcam-dagster
 spec:
   containers:
-  - name: ubuntu-container
-    image: ubuntu:22.04
+  - name: util-container
+    image: containers.repo.sciserver.org/astropath/python_utils:latest
     command: [ "/bin/sleep", "infinity"]
     volumeMounts:
       - name: imqcam-dagster-io-data
         mountPath: /imqcam-dagster-io-data
+  imagePullSecrets:
+  - name: regcred
   volumes:
     - name: imqcam-dagster-io-data
       persistentVolumeClaim:
