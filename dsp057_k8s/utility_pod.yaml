@@ -1,0 +1,18 @@
+# A pod to use for generally working with the different mounts and filesystems
+apiVersion: v1
+kind: Pod
+metadata:
+  name: utility-pod
+  namespace: maggie-imqcam-dagster
+spec:
+  containers:
+  - name: ubuntu-container
+    image: ubuntu:22.04
+    command: [ "/bin/sleep", "infinity"]
+    volumeMounts:
+      - name: imqcam-dagster-io-data
+        mountPath: /imqcam-dagster-io-data
+  volumes:
+    - name: imqcam-dagster-io-data
+      persistentVolumeClaim:
+        claimName: imqcam-dagster-io-data
