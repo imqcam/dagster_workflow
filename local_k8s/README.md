@@ -56,7 +56,7 @@ Next, create a namespace to install dagster in:
 
 Dagster implements a number of different I/O managers that handle serializting and deserializing inputs and outputs between each of its tasks. The vanilla tutorial linked above uses an S3 bucket for this purpose, but I've edited the deployment to use a "[`FilesystemIOManager`](https://docs.dagster.io/_apidocs/io-managers#dagster.FilesystemIOManager)" instead, which I think is simpler. It also lets you see what the ser/des i/o looks like by storing it on your local system.
 
-Creating the cluster above should have created a folder inside this one called "`imqcam_local_data`" which is the root for all of the managed I/O. We'll use a k8s yaml file to create a Persistent Volume and a Persistent Volume Claim pointing to that folder; it'll be mounted at `/tmp/imqcam_local_data` inside every one of the Dagster pods in the cluster. 
+Creating the cluster above should have created a folder inside this one called "`imqcam_local_data`" which is the root for all of the managed I/O. We'll use a k8s yaml file to create a Persistent Volume and a Persistent Volume Claim pointing to that folder; it'll be mounted at `/tmp/imqcam_filesystem_io_data` inside every one of the Dagster pods in the cluster. 
 
 Create the PersistentVolume for Dagster's FilesystemIOManager to use:
 
