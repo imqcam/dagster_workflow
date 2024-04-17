@@ -6,11 +6,12 @@ from dagster import (
     FilesystemIOManager,
 )
 from .example.example import example_job, pod_per_op_celery_job
+from .ttt_ti64.ttt_ti64 import ttt_ti64_job
 
 io_manager = FilesystemIOManager(base_dir="/tmp/imqcam_filesystem_io_data")
 
 defs = Definitions(
-    jobs=[example_job, pod_per_op_celery_job],
+    jobs=[example_job, pod_per_op_celery_job, ttt_ti64_job],
     resources={
         "io_manager": io_manager,
     },

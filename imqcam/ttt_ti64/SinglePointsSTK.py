@@ -1,6 +1,6 @@
 import numpy as np
 from scipy.signal import find_peaks
-import NGFunctions as NG
+from . import NGFunctions as NG
 
 def ThermalStep(Timesa, TempCa):
 
