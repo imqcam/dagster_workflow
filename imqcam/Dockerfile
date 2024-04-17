@@ -12,6 +12,11 @@ RUN pip install \
     dagster-celery[flower,redis,kubernetes] \
     dagster-celery-k8s
 
+# pip install other dependencies
+RUN pip install \
+    pandas==2.2.2 \
+    scipy==1.13.0
+
 # Bake in Python code
 COPY . /imqcam
 

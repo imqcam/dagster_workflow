@@ -5,5 +5,4 @@ dagster-k8s == 0.22.4
 dagster-celery[flower,redis,kubernetes] == 0.22.4
 dagster-celery-k8s == 0.22.4
 pandas == 2.2.2
-ipykernel == 6.29.4
 scipy == 1.13.0
