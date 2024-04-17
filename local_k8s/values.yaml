@@ -107,6 +107,9 @@ dagster-user-deployments:
       #   - name: my-volume
       #     configMap: my-config-map
       volumes:
+        - name: imqcam-dagster-io-data
+          persistentVolumeClaim:
+            claimName: imqcam-dagster-io-data
         - name: imqcam-local-data
           persistentVolumeClaim:
             claimName: imqcam-local-data
@@ -121,8 +124,10 @@ dagster-user-deployments:
       #     mountPath: /opt/dagster/test_folder
       #     subPath: test_file.yaml
       volumeMounts:
+        - name: imqcam-dagster-io-data
+          mountPath: /tmp/imqcam_filesystem_io_data
         - name: imqcam-local-data
-          mountPath: /tmp/imqcam_local_data
+          mountPath: /imqcam_local_data
 
       # Init containers to run before the main container. See:
       # https://kubernetes.io/docs/concepts/workloads/pods/init-containers/
@@ -306,6 +311,9 @@ runLauncher:
       #   - name: my-volume
       #     configMap: my-config-map
       volumes:
+        - name: imqcam-dagster-io-data
+          persistentVolumeClaim:
+            claimName: imqcam-dagster-io-data
         - name: imqcam-local-data
           persistentVolumeClaim:
             claimName: imqcam-local-data
@@ -320,8 +328,10 @@ runLauncher:
       #     mountPath: /opt/dagster/test_folder
       #     subPath: test_file.yaml
       volumeMounts:
-        - name: imqcam-local-data
+        - name: imqcam-dagster-io-data
           mountPath: /tmp/imqcam_filesystem_io_data
+        - name: imqcam-local-data
+          mountPath: /imqcam_local_data
 
       # Additional labels that should be included in the Job's Pod. See:
       # https://kubernetes.io/docs/concepts/overview/working-with-objects/labels

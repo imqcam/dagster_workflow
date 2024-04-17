@@ -52,15 +52,15 @@ Next, create a namespace to install dagster in:
     kubectl create namespace dagster
     kubectl get namespaces
 
-### Create the PV and PVC for the I/O manager to use
+### Create the PVs and PVCs for local data storage and for the I/O manager to use
 
 Dagster implements a number of different I/O managers that handle serializting and deserializing inputs and outputs between each of its tasks. The vanilla tutorial linked above uses an S3 bucket for this purpose, but I've edited the deployment to use a "[`FilesystemIOManager`](https://docs.dagster.io/_apidocs/io-managers#dagster.FilesystemIOManager)" instead, which I think is simpler. It also lets you see what the ser/des i/o looks like by storing it on your local system.
 
-Creating the cluster above should have created a folder inside this one called "`imqcam_local_data`" which is the root for all of the managed I/O. We'll use a k8s yaml file to create a Persistent Volume and a Persistent Volume Claim pointing to that folder; it'll be mounted at `/tmp/imqcam_filesystem_io_data` inside every one of the Dagster pods in the cluster. 
+Creating the cluster above should have created two folders inside this one called "`imqcam_local_data`" and "`imqcam_filesystem_io`". The first is a location where you can put files that you'd like to be able to see from inside the system, and the second is the root for all of the managed I/O. We'll use a k8s yaml file to create Persistent Volumes and Persistent Volume Claims pointing to those folder; they'll be mounted at `/tmp/imqcam_local_data` and `/tmp/imqcam_filesystem_io_data`, respectively, inside every one of the Dagster pods in the cluster. 
 
-Create the PersistentVolume for Dagster's FilesystemIOManager to use:
+Run:
 
-    kubectl apply -f local_data_volume_and_claim.yaml
+    kubectl apply -f volumes_and_claims.yaml
     kubectl get pv -n dagster
     kubectl get pvc -n dagster
 

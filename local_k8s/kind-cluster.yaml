@@ -10,6 +10,8 @@ nodes:
       kubeletExtraArgs:
         node-labels: "node=worker_1"
   extraMounts:
+    - hostPath: ./imqcam_filesystem_io
+      containerPath: /tmp/imqcam_filesystem_io
     - hostPath: ./imqcam_local_data
       containerPath: /tmp/imqcam_local_data
 - role: worker
@@ -20,5 +22,7 @@ nodes:
       kubeletExtraArgs:
         node-labels: "node=worker_2"
   extraMounts:
+    - hostPath: ./imqcam_filesystem_io
+      containerPath: /tmp/imqcam_filesystem_io
     - hostPath: ./imqcam_local_data
       containerPath: /tmp/imqcam_local_data

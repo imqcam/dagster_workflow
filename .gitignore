@@ -1,5 +1,8 @@
-# The local k8s deployments scratch data location
+# The local k8s deployments data location
 local_k8s/imqcam_local_data/*
+
+# The local k8s deployment's filesystem io location
+local_k8s/imqcam_filesystem_io/*
 
 *.DS_Store
 
