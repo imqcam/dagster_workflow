@@ -88,7 +88,8 @@ dagster-user-deployments:
       #
       # envSecrets:
       #   - name: secret
-      envSecrets: []
+      envSecrets:
+        - name: girder-connection-info
 
       # Additional labels that should be included. See:
       # https://kubernetes.io/docs/concepts/overview/working-with-objects/labels
@@ -251,7 +252,8 @@ runLauncher:
       #
       # envSecrets:
       #   - name: secret
-      envSecrets: []
+      envSecrets:
+        - name: girder-connection-info
 
       annotations: {}
 

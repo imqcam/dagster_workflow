@@ -42,6 +42,20 @@ Create the PersistentVolume for Dagster's FilesystemIOManager to use:
     kubectl get pv -n maggie-imqcam-dagster
     kubectl get pvc -n maggie-imqcam-dagster
 
+### Create secrets
+
+Some important values needed by DAGs are stored as Kubernetes Secrets. Those Secrets are created by the "`secrets.yaml`" file in this directory, and their values are not committed directly to this repository. For that reason, you'll need to edit the `secrets.yaml` file by hand after you've cloned this repository. That file has some values in it that read like "`base_64_encoded_*`"; you should replace those values with the base64-encoded real values of the Secrets that you need to create. To base64-encode a particular string, you can run:
+
+    echo -n "string_to_encode" | base64 -b 0
+
+You should know what the values for each of the Secrets should be, and then you should base64 encode those string values and replace the "`base_64_encoded_*`" values in the `secrets.yaml` file. After that's done, you can create the Secrets and add them to the cluster with:
+
+    kubectl apply -f secrets.yaml
+
+And check that they exist with:
+
+    kubectl get secrets -n dagster
+
 ### Install Dagster
 
 We'll install Dagster in k8s using the Helm chart that Dagster makes publicly available. The [`values.yaml`](./values.yaml) file in this directory edits its default configurations to work as described above.
