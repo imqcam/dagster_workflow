@@ -1,9 +1,13 @@
 # imports
 import pytz
+import pathlib
+import base64
+from io import BytesIO
 from datetime import datetime
-from dagster import op, graph, In, Out
+from dagster import op, graph, In, Out, MetadataValue
 from dagster_celery_k8s import celery_k8s_job_executor
 import pandas as pd
+import matplotlib.pyplot as plt
 from . import SinglePointSTK as SP
 
 
@@ -19,8 +23,6 @@ def run_ttt_ti64(context, input_path: str) -> str:
     zpos = list(df.columns.values)
     # Convert z from meters to millimeters
     zpos = [10**3 * x for x in zpos]
-    # Assuming a regular grid
-    dz = zpos[1] - zpos[0]
     # compute the fractions of microstructure constituents for each position
     Fraca = []
     FracGB = []
@@ -68,9 +70,34 @@ def run_ttt_ti64(context, input_path: str) -> str:
     return out_file
 
 
+@op(ins={"input_path": In(str)})
+def plot_ttt_ti64(context, input_path: str) -> None:
+    # read the input result file
+    df = pd.read_csv(input_path).drop(columns=["Unnamed: 0"])
+    # Make the plot
+    f, ax = plt.subplots(2, 1, figsize=(2 * 4, 6), sharex=True)
+    for colname in df.columns:
+        if colname in ("zpos[mm]", "tlath"):
+            continue
+        ax[0].plot(df["zpos[mm]"], df[colname], marker=".", label=colname)
+    ax[1].plot(df["zpos[mm]"], df["tlath"], marker=".", color="k")
+    ax[0].legend(loc="upper left", bbox_to_anchor=(1.0, 1.0))
+    ax[0].set_ylabel("fraction")
+    ax[1].set_xlabel("z position (mm)")
+    ax[1].set_ylabel(r"$\alpha$ lath spacing ($\mu$m)")
+    f.suptitle(pathlib.Path(input_path).name)
+    # Save the figure image in the metadata
+    plot_bytestream = BytesIO()
+    plt.savefig(plot_bytestream, format="png", bbox_inches="tight")
+    image_data = base64.b64encode(plot_bytestream.getvalue())
+    md_content = f"![img](data:image/png;base64,{image_data.decode()})"
+    if context is not None:
+        context.add_output_metadata(metadata={"plot": MetadataValue.md(md_content)})
+
+
 @graph
 def ttt_ti64_graph():
-    run_ttt_ti64()
+    plot_ttt_ti64(run_ttt_ti64())
 
 
 ttt_ti64_job = ttt_ti64_graph.to_job(

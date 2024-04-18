@@ -15,7 +15,8 @@ RUN pip install \
 # pip install other dependencies
 RUN pip install \
     pandas==2.2.2 \
-    scipy==1.13.0
+    scipy==1.13.0 \
+    matplotlib==3.8.4
 
 # Bake in Python code
 COPY . /imqcam

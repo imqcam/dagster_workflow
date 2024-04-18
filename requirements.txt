@@ -6,3 +6,4 @@ dagster-celery[flower,redis,kubernetes] == 0.22.4
 dagster-celery-k8s == 0.22.4
 pandas == 2.2.2
 scipy == 1.13.0
+matplotlib == 3.8.4
