@@ -9,20 +9,18 @@ from dagster import op, graph, In, Out, MetadataValue
 from dagster_celery_k8s import celery_k8s_job_executor
 import pandas as pd
 import matplotlib.pyplot as plt
-from ..girder.girder_handling import (
-    get_dataframe_from_girder_csv_file,
-    write_dataframe_to_girder_file,
-)
+from ..resources.imqcam_girder_resource import IMQCAMGirderResource
 from . import SinglePointSTK as SP
 
 
 @op(ins={"input_path": In(str)}, out={"output_path": Out(str)})
-def run_ttt_ti64(context, input_path: str) -> str: # pylint: disable=unused-argument
-    """ Reads the input file from Girder, runs the analysis, writes the output csv file
+# pylint: disable=unused-argument
+def run_ttt_ti64(context, imqcam_girder: IMQCAMGirderResource, input_path: str) -> str:
+    """Reads the input file from Girder, runs the analysis, writes the output csv file
     back to Girder, and returns the path to the file that was outputted
     """
     # Read the input file from Girder into a dataframe
-    df = get_dataframe_from_girder_csv_file(input_path)
+    df = imqcam_girder.get_dataframe_from_girder_csv_file(input_path)
     # Rename the columns in the dataframe as read from the file
     df.columns = ["z position", "Time (s)", "Temperature"]
     # Specify the position time/temperature history
@@ -63,10 +61,10 @@ def run_ttt_ti64(context, input_path: str) -> str: # pylint: disable=unused-argu
         "tlath": tlath,
     }
     dfout = pd.DataFrame(output)
-    # Output to a csv file using the time/temp history file and current date/time 
+    # Output to a csv file using the time/temp history file and current date/time
     # as a unique identifier
     # Get the timezone object for New York (Eastern time zone)
-    tz_ny = pytz.timezone(os.getenv("TZ","America/New_York"))
+    tz_ny = pytz.timezone(os.getenv("TZ", "America/New_York"))
     # Get the current time in New York
     now = datetime.now(tz_ny)
     # Set the outputfilename
@@ -77,15 +75,17 @@ def run_ttt_ti64(context, input_path: str) -> str: # pylint: disable=unused-argu
         + ".csv"
     )
     # Write the dataframe back out as a new file in Girder
-    write_dataframe_to_girder_file(out_file, dfout)
+    imqcam_girder.write_dataframe_to_girder_file(dfout, out_file, index=False)
     return out_file
 
 
 @op(ins={"input_path": In(str)})
-def plot_ttt_ti64(context, input_path: str) -> None:
-    """ Make a plot of the result and output it to the op's metadata as markdown """
+def plot_ttt_ti64(
+    context, imqcam_girder: IMQCAMGirderResource, input_path: str
+) -> None:
+    """Make a plot of the result and output it to the op's metadata as markdown"""
     # read the input result file
-    df = get_dataframe_from_girder_csv_file(input_path)
+    df = imqcam_girder.get_dataframe_from_girder_csv_file(input_path)
     # Make the plot
     f, ax = plt.subplots(2, 1, figsize=(2 * 4, 6), sharex=True)
     for colname in df.columns:
@@ -109,7 +109,7 @@ def plot_ttt_ti64(context, input_path: str) -> None:
 
 @graph
 def ttt_ti64_graph():
-    """ The two ops above as a Graph """
+    """The two ops above as a Graph"""
     # pylint: disable=no-value-for-parameter
     plot_ttt_ti64(run_ttt_ti64())
 
