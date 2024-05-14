@@ -22,5 +22,8 @@ RUN pip install \
 # Bake in Python code
 COPY . /imqcam
 
+#env var for the timezone
+ENV TZ=America/New_York
+
 # Remove this dockerfile from the image
 RUN rm /imqcam/Dockerfile
