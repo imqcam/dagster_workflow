@@ -1,0 +1,211 @@
+####################################################################################################
+# Dagster Webserver: Configuration for the Dagster webserver
+####################################################################################################
+dagsterWebserver:
+  # Support Node, affinity and tolerations for webserver pod assignment. See:
+  # https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#nodeselector
+  # https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#affinity-and-anti-affinity
+  # https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/
+  # only deploy on kde04.idies.jhu.edu
+  nodeSelector:
+    kubernetes.io/hostname: kde04.idies.jhu.edu
+
+####################################################################################################
+# User Code Deployments: Configuration for user code containers to be loaded via GRPC server. For
+# each item in the "deployments" list, a K8s Deployment and K8s Service will be created to run the
+# GRPC server that the Dagster webserver communicates with to get definitions information and the current
+# image information. These deployments can be updated independently of the Dagster webserver, and the webserver
+# will pull the current image for all execution. When using a distributed executor (such as
+# Celery-K8s) for job execution, the current image will be queried once and used for all
+# op executions for that run. In order to guarantee that all op executions within a job
+# execution use the same image, we recommend using a unique tag (ie not "latest").
+#
+# All user code will be invoked within the images.
+####################################################################################################
+dagster-user-deployments:
+  # List of unique deployments
+  deployments:
+    - name: "imqcam-example-1"
+      image:
+        # When a tag is not supplied, it will default as the Helm chart version.
+        repository: "docker.io/openmsi/testing_k8s_dagster"
+        tag: latest
+
+        # Change with caution! If you're using a fixed tag for pipeline run images, changing the
+        # image pull policy to anything other than "Always" will use a cached/stale image, which is
+        # almost certainly not what you want.
+        pullPolicy: Always
+
+      # Arguments to `dagster api grpc`.
+      # Ex: "dagster api grpc -m dagster_test.test_project.test_jobs.repo -a define_demo_execution_repo"
+      # would translate to:
+      # dagsterApiGrpcArgs:
+      #   - "-m"
+      #   - "dagster_test.test_project.test_jobs.repo"
+      #   - "-a"
+      #   - "define_demo_execution_repo"
+      #
+      # The `dagsterApiGrpcArgs` key can also be replaced with `codeServerArgs` to use a new
+      # experimental `dagster code-server start` command instead of `dagster api grpc`, which takes
+      # identical arguments but can reload its definitions from within the Dagster UI without
+      # needing to restart the user code deployment pod.
+      dagsterApiGrpcArgs:
+        - "--module-name"
+        - "imqcam"
+        - "--attribute"
+        - "defs"
+      port: 3030
+
+      # Whether or not to include configuration specified for this user code deployment in the pods
+      # launched for runs from that deployment
+      includeConfigInLaunchedRuns:
+        enabled: true
+
+      # Additional environment variables can be retrieved and set from Secrets. See:
+      # https://kubernetes.io/docs/concepts/configuration/secret/#use-case-as-container-environment-variables
+      #
+      # Example:
+      #
+      # envSecrets:
+      #   - name: secret
+      envSecrets:
+        - name: girder-connection-info
+
+      # Additional volumes that should be included. See:
+      # https://v1-18.docs.kubernetes.io/docs/reference/generated/kubernetes-api/v1.18/#volume-v1-core
+      #
+      # Example:
+      #
+      # volumes:
+      #   - name: my-volume
+      #     configMap: my-config-map
+      volumes:
+        - name: imqcam-dagster-io-data
+          persistentVolumeClaim:
+            claimName: imqcam-dagster-io-data
+
+      # Additional volume mounts that should be included. See:
+      # See: https://v1-18.docs.kubernetes.io/docs/reference/generated/kubernetes-api/v1.18/#volumemount-v1-core
+      #
+      # Example:
+      #
+      # volumeMounts:
+      #   - name: test-volume
+      #     mountPath: /opt/dagster/test_folder
+      #     subPath: test_file.yaml
+      volumeMounts:
+        - name: imqcam-dagster-io-data
+          mountPath: /tmp/imqcam_filesystem_io_data
+
+      # only deploy on kde04.idies.jhu.edu
+      nodeSelector:
+        kubernetes.io/hostname: kde04.idies.jhu.edu
+
+####################################################################################################
+# Run Launcher: Configuration for run launcher
+####################################################################################################
+runLauncher:
+  # Type can be one of [K8sRunLauncher, CeleryK8sRunLauncher, CustomRunLauncher]
+  type: CeleryK8sRunLauncher # K8sRunLauncher
+
+  config:
+    # This configuration will only be used if the CeleryK8sRunLauncher is selected
+    celeryK8sRunLauncher:
+      # Additional environment variables can be retrieved and set from Secrets. See:
+      # https://kubernetes.io/docs/concepts/configuration/secret/#use-case-as-container-environment-variables
+      #
+      # Example:
+      #
+      # envSecrets:
+      #   - name: secret
+      envSecrets:
+        - name: girder-connection-info
+
+      # Sets a node selector as a default for all Celery queues.
+      #
+      # See:
+      # https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#nodeselector
+      # only deploy on kde04.idies.jhu.edu
+      nodeSelector:
+        kubernetes.io/hostname: kde04.idies.jhu.edu
+
+      # Additional volumes that should be included in the Job's Pod. See:
+      # https://v1-18.docs.kubernetes.io/docs/reference/generated/kubernetes-api/v1.18/#volume-v1-core
+      #
+      # Example:
+      #
+      # volumes:
+      #   - name: my-volume
+      #     configMap: my-config-map
+      volumes:
+        - name: imqcam-dagster-io-data
+          persistentVolumeClaim:
+            claimName: imqcam-dagster-io-data
+
+      # Additional volume mounts that should be included in the container in the Job's Pod. See:
+      # See: https://v1-18.docs.kubernetes.io/docs/reference/generated/kubernetes-api/v1.18/#volumemount-v1-core
+      #
+      # Example:
+      #
+      # volumeMounts:
+      #   - name: test-volume
+      #     mountPath: /opt/dagster/test_folder
+      #     subPath: test_file.yaml
+      volumeMounts:
+        - name: imqcam-dagster-io-data
+          mountPath: /tmp/imqcam_filesystem_io_data
+
+####################################################################################################
+# PostgreSQL: Configuration values for postgresql
+#
+# https://github.com/kubernetes/charts/blob/master/stable/postgresql/README.md
+#
+# A PostgreSQL database is required to run Dagster on Kubernetes. If postgresql.enabled is marked as
+# false, the PG credentials specified here will still be used, and should point to an external PG
+# database that is accessible from this chart.
+####################################################################################################
+postgresql:
+  # only deploy on kde04.idies.jhu.edu
+  nodeSelector:
+    kubernetes.io/hostname: kde04.idies.jhu.edu
+
+####################################################################################################
+# RabbitMQ: Configuration values for rabbitmq. Only one of RabbitMQ / Redis should be enabled.
+####################################################################################################
+rabbitmq:
+  enabled: true
+  # only deploy on kde04.idies.jhu.edu
+  nodeSelector:
+    kubernetes.io/hostname: kde04.idies.jhu.edu
+
+####################################################################################################
+# Dagster Daemon (Optional) Deploy a daemon for launching queued runs and running schedules and
+# sensors.
+#
+# By default, this daemon is included in your deployment and used to run schedules and sensors.
+# Setting `enabled` to false will stop the daemon from being included in your deployment.
+#
+# Each thread in the daemon periodically sends heartbeats to indicate that it is still running.
+# Setting `heartbeatTolerance` lets you configure how long each thread can run without sending
+# a heartbeat before the daemon determines that one must be hanging and restarts the process.
+#
+# Setting `config.queuedRunCoordinator.maxConcurrentRuns` in `runCoordinator` allows you to set
+# limits on the total number of runs that can execute at once.
+####################################################################################################
+dagsterDaemon:
+  # only deploy on kde04.idies.jhu.edu
+  nodeSelector:
+    kubernetes.io/hostname: kde04.idies.jhu.edu
+
+####################################################################################################
+# As an open source project, we collect usage statistics to better understand how users engage
+# with Dagster and to inform development priorities.
+#
+# Telemetry data will motivate projects such as adding functionality in frequently-used parts of
+# the product and will help us understand adoption of new features.
+#
+# For more details, see:
+# https://docs.dagster.io/getting-started/telemetry
+####################################################################################################
+telemetry:
+  enabled: false

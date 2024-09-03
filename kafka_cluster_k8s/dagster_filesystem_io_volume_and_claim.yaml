@@ -3,7 +3,7 @@ apiVersion: v1
 kind: PersistentVolume
 metadata:
   name: imqcam-dagster-io-data
-  namespace: maggie-imqcam-dagster
+  namespace: imqcam-dagster
 spec:
   capacity:
     storage: 5Gi
@@ -13,7 +13,7 @@ spec:
     apiVersion: v1
     kind: PersistentVolumeClaim
     name: imqcam-dagster-io-data
-    namespace: maggie-imqcam-dagster
+    namespace: imqcam-dagster
   nfs:
     server: sciserver-fs1
     path: /srv/vc_crypt/IMQCAM/dagster_filesystem_io
@@ -24,7 +24,7 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: imqcam-dagster-io-data
-  namespace: maggie-imqcam-dagster
+  namespace: imqcam-dagster
 spec:
   accessModes:
     - ReadWriteMany
