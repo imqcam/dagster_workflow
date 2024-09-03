@@ -78,9 +78,9 @@ And that's all! But while I'm here: if you'd like to see what the default values
 
 ### Interacting with Dagster
 
-You can open up the Dagster webserver UI by forwarding the port out of its pod. First, open a new window ssh'd to dsp057 with port 9000 forwarded:
+You can open up the Dagster webserver UI by forwarding the port out of its pod. First, open a new window ssh'd to bki13 with port 9000 forwarded:
 
-    ssh dsp057 -L 9000:localhost:9000
+    ssh bki13 -L 9000:localhost:9000
 
 Then, get the name of the webserver pod by running:
 

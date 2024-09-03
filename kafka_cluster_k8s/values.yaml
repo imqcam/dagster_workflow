@@ -164,19 +164,19 @@ runLauncher:
 # false, the PG credentials specified here will still be used, and should point to an external PG
 # database that is accessible from this chart.
 ####################################################################################################
-postgresql:
-  # only deploy on kde04.idies.jhu.edu
-  nodeSelector:
-    kubernetes.io/hostname: kde04.idies.jhu.edu
+# postgresql:
+#   # only deploy on kde04.idies.jhu.edu
+#   nodeSelector:
+#     kubernetes.io/hostname: kde04.idies.jhu.edu
 
 ####################################################################################################
 # RabbitMQ: Configuration values for rabbitmq. Only one of RabbitMQ / Redis should be enabled.
 ####################################################################################################
-rabbitmq:
-  enabled: true
-  # only deploy on kde04.idies.jhu.edu
-  nodeSelector:
-    kubernetes.io/hostname: kde04.idies.jhu.edu
+# rabbitmq:
+#   enabled: true
+#   # only deploy on kde04.idies.jhu.edu
+#   nodeSelector:
+#     kubernetes.io/hostname: kde04.idies.jhu.edu
 
 ####################################################################################################
 # Dagster Daemon (Optional) Deploy a daemon for launching queued runs and running schedules and
