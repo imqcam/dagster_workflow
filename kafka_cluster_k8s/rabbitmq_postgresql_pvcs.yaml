@@ -1,0 +1,27 @@
+# The data-dagster-postgresql-0 PersistentVolumeClaim
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: data-dagster-postgresql-0
+  namespace: imqcam-dagster
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Gi
+  storageClassName: local-storage-kde04 
+---
+# The data-dagster-rabbitmq-0 PersistentVolumeClaim
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: data-dagster-rabbitmq-0
+  namespace: imqcam-dagster
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Gi
+  storageClassName: local-storage-kde04 
