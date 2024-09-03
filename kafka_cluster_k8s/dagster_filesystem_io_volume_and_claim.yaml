@@ -17,7 +17,6 @@ spec:
   nfs:
     server: sciserver-fs1
     path: /srv/vc_crypt/IMQCAM/dagster_filesystem_io
-  persistentVolumeReclaimPolicy: Retain
 ---
 # The imqcam-dagster-io-data PersistentVolumeClaim
 apiVersion: v1
