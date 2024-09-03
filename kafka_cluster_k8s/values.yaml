@@ -172,8 +172,8 @@ runLauncher:
 ####################################################################################################
 # RabbitMQ: Configuration values for rabbitmq. Only one of RabbitMQ / Redis should be enabled.
 ####################################################################################################
-# rabbitmq:
-#   enabled: true
+rabbitmq:
+  enabled: true
 #   # only deploy on kde04.idies.jhu.edu
 #   nodeSelector:
 #     kubernetes.io/hostname: kde04.idies.jhu.edu
