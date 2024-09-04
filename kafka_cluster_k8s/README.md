@@ -113,13 +113,14 @@ When that's done running you should be able to reload the code location from the
 
 K8s installs themselves can also be adjusted without uninstalling/reinstalling everything. You can edit the `values.yaml` file however you'd like, and then edit a running installation with:
 
-    helm upgrade -f values.yaml dagster dagster/dagster -n imqcam-dagster --debug
+    helm upgrade -f values.yaml dagster dagster/dagster -n imqcam-dagster --version 1.7.5 --debug
 
-K8s will figure out which pods need to be changed and it will remake them by itself without compromising the integrity of the overall installation.
+K8s will figure out which pods need to be changed and it will remake them by itself without compromising the integrity of the overall installation. (Again note that the above command keeps the Helm chart pegged to a specific version.)
 
 ### Clearing it all out
 
 Uninstall dagster and delete the namespace with:
 
     helm uninstall dagster -n imqcam-dagster
+    kubectl delete pv imqcam-dagster-io-data -n imqcam-dagster
     kubectl delete namespace imqcam-dagster
