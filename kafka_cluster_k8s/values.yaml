@@ -56,11 +56,6 @@ dagster-user-deployments:
         - "defs"
       port: 3030
 
-      # Whether or not to include configuration specified for this user code deployment in the pods
-      # launched for runs from that deployment
-      includeConfigInLaunchedRuns:
-        enabled: true
-
       # Additional environment variables can be retrieved and set from Secrets. See:
       # https://kubernetes.io/docs/concepts/configuration/secret/#use-case-as-container-environment-variables
       #

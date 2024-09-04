@@ -32,15 +32,18 @@ Next, create a namespace to install dagster in:
     kubectl create namespace imqcam-dagster
     kubectl get namespaces
 
-### Create the PV and PVC for the I/O manager to use
+### Create the PVs/PVCs for the I/O manager, rabbitmq, and postgresql to use
 
 Dagster implements a number of different I/O managers that handle serializing and deserializing inputs and outputs between each of its tasks. The vanilla tutorial linked above uses an S3 bucket for this purpose, but I've edited the deployment to use a "[`FilesystemIOManager`](https://docs.dagster.io/_apidocs/io-managers#dagster.FilesystemIOManager)" instead, which I think is simpler. It also lets you see what the ser/des i/o looks like by storing it on a (presumably more accessible) filesystem.
 
 We'll use a k8s yaml file to create a Persistent Volume and a Persistent Volume Claim pointing to a folder in an NFS share; it'll be mounted at `/tmp/imqcam_filesystem_io_data` inside every one of the Dagster pods in the cluster. 
 
-Create the PersistentVolume for Dagster's FilesystemIOManager to use:
+We also need to create PVCs for the postgres and rabbitmq components to use for writing out their own backend data.
+
+Create the one PersistentVolume and three PersistentVolumeClaims:
 
     kubectl apply -f dagster_filesystem_io_volume_and_claim.yaml
+    kubectl apply -f rabbitmq_postgresql_pvcs.yaml
     kubectl get pv -n imqcam-dagster
     kubectl get pvc -n imqcam-dagster
 
@@ -68,13 +71,15 @@ First, add the Dagster Helm chart repo:
 
 Then install dagster referencing the custom `values.yaml` file:
 
-    helm install dagster dagster/dagster -n imqcam-dagster --values values.yaml --debug
+    helm install dagster dagster/dagster -n imqcam-dagster --version 1.7.5 --values values.yaml --debug
 
 And that's all! But while I'm here: if you'd like to see what the default values.yaml file looks like (helpful for figuring out how to edit it), you can get your own copy of it with:
 
     helm show values dagster/dagster > default_values.yaml
 
-(There's already a copy in the repo).
+(There's already a copy in the repo). 
+
+NOTE: the install command above is pegged to a specific version (1.7.5) of the dagster Helm chart because later versions [have a bug in the Helm chart making the CeleryK8sRunLauncher unusable, but presumably that will get fixed at some point](https://github.com/dagster-io/dagster/issues/22027).
 
 ### Interacting with Dagster
 
