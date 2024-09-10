@@ -17,7 +17,8 @@ RUN pip install \
     pandas==2.2.2 \
     scipy==1.13.0 \
     matplotlib==3.8.4 \
-    girder-client==3.2.3
+    girder-client==3.2.3 \
+    globus-compute-sdk==2.27.1
 
 # Bake in Python code
 COPY . /imqcam

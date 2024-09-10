@@ -65,6 +65,7 @@ dagster-user-deployments:
       #   - name: secret
       envSecrets:
         - name: girder-connection-info
+        - name: globus-compute-creds
 
       # Additional volumes that should be included. See:
       # https://v1-18.docs.kubernetes.io/docs/reference/generated/kubernetes-api/v1.18/#volume-v1-core
@@ -115,6 +116,7 @@ runLauncher:
       #   - name: secret
       envSecrets:
         - name: girder-connection-info
+        - name: globus-compute-creds
 
       # Sets a node selector as a default for all Celery queues.
       #

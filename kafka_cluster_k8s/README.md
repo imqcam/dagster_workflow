@@ -61,6 +61,8 @@ And check that they exist with:
 
     kubectl get secrets -n imqcam-dagster
 
+Note that two of these secrets refer to the Globus Compute Client: the Globus Compute Endpoint that will be used must have been configured with those two environment variables set to the same (raw, not base64-encoded) values on the system hosting the Globus Compute Endpoint, or Dagster won't have permission to submit jobs to the endpoint.
+
 ### Install Dagster
 
 We'll install Dagster in k8s using the Helm chart that Dagster makes publicly available. The [`values.yaml`](./values.yaml) file in this directory edits its default configurations to work as described above.

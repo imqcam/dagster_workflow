@@ -9,6 +9,7 @@ from dagster import (
 from .resources.imqcam_girder_resource import IMQCAMGirderResource
 from .example.example import example_job, pod_per_op_celery_job
 from .ttt_ti64.ttt_ti64 import ttt_ti64_job
+from .cmrl.cmrl import cmrl_job
 
 io_manager = FilesystemIOManager(base_dir="/tmp/imqcam_filesystem_io_data")
 
@@ -21,7 +22,7 @@ if api_key is None:
     raise RuntimeError("ERROR: no value set for 'GIRDER_API_KEY' env var!")
 
 defs = Definitions(
-    jobs=[example_job, pod_per_op_celery_job, ttt_ti64_job],
+    jobs=[example_job, pod_per_op_celery_job, ttt_ti64_job, cmrl_job],
     resources={
         "io_manager": io_manager,
         "imqcam_girder": IMQCAMGirderResource(api_url=api_url, api_key=api_key),
