@@ -1,4 +1,5 @@
 # imports
+from typing import Dict
 import pathlib
 from io import BytesIO
 import pandas as pd
@@ -24,6 +25,32 @@ class IMQCAMGirderResource(ConfigurableResource):
     def setup_for_execution(self, context) -> None:  # pylint: disable=unused-argument
         self._client = girder_client.GirderClient(apiUrl=self.api_url)
 
+    def get_folder_file_names_and_ids(self, girder_folder_path: str) -> Dict[str:str]:
+        """Return a dictionary of file IDs keyed by filename for all files inside the given
+        folder path on Girder. Only returns entries for files directly inside the given
+        folder, not any files nested further in subdirectories.
+
+        Args:
+            girder_folder_path (str): The path to the folder in Girder as a string
+                formatted like [collection_name]/path/to/folder
+
+        Returns:
+            Dict[str: str]: A dictionary of file IDs keyed by their names for files
+                directly inside girder_folder_path (not nested further in subfolders)
+        """
+        # parse the folder path to get the collection name, and relative path to the folder
+        collection_name, rel_folder_path = self._get_collection_name_and_rel_path(
+            girder_folder_path
+        )
+        folder_id = self._get_folder_id(
+            rel_folder_path, collection_name=collection_name
+        )
+        file_names_ids = {}
+        for item_resp in self._client.listItem(folder_id):
+            for file_resp in self._client.listFile(item_resp["_id"]):
+                file_names_ids[file_resp["name"]] = file_resp["_id"]
+        return file_names_ids
+
     def get_dataframe_from_girder_csv_file(self, girder_file_path: str) -> pd.DataFrame:
         """Read the file at girder_file_path as a CSV and return its contents
         as a pandas dataframe
@@ -35,11 +62,10 @@ class IMQCAMGirderResource(ConfigurableResource):
         Returns:
             pandas.DataFrame: The contents of the file read into a pandas dataframe
         """
-        # parse the filepath to get the collection name, and relative path to the file
-        path_split = girder_file_path.split("/")
-        collection_name = path_split[0]
-        rel_file_path = "/".join(path_split[1:])
-        # get the item and file ID for the file
+        # get the file ID for the file
+        collection_name, rel_file_path = self._get_collection_name_and_rel_path(
+            girder_file_path
+        )
         file_id = self._get_file_id(rel_file_path, collection_name=collection_name)
         # read the file contents into a bytestring
         file_contents = self._client.downloadFileAsIterator(file_id)
@@ -85,6 +111,20 @@ class IMQCAMGirderResource(ConfigurableResource):
         )
 
     ############################# PRIVATE HELPER FUNCTIONS #############################
+
+    def _get_collection_name_and_rel_path(self, girder_path):
+        # parse the path to get the collection name and relative path to the file
+        path_split = girder_path.split("/")
+        if len(path_split) < 2:
+            raise ValueError(
+                (
+                    f"ERROR: girder path {girder_path} does not have enough parts "
+                    "to specify a file or folder within a collection!"
+                )
+            )
+        collection_name = path_split[0]
+        rel_file_path = "/".join(path_split[1:])
+        return collection_name, rel_file_path
 
     def _login(self):
         """Authenticate the client if it isn't already authenticated"""
