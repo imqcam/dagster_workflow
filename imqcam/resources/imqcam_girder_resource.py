@@ -25,7 +25,7 @@ class IMQCAMGirderResource(ConfigurableResource):
     def setup_for_execution(self, context) -> None:  # pylint: disable=unused-argument
         self._client = girder_client.GirderClient(apiUrl=self.api_url)
 
-    def get_folder_file_names_and_ids(self, girder_folder_path: str) -> Dict[str:str]:
+    def get_folder_file_names_and_ids(self, girder_folder_path: str) -> Dict[str, str]:
         """Return a dictionary of file IDs keyed by filename for all files inside the given
         folder path on Girder. Only returns entries for files directly inside the given
         folder, not any files nested further in subdirectories.

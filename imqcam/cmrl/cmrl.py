@@ -4,39 +4,32 @@
 import concurrent.futures
 from globus_compute_sdk import Client, Executor
 from globus_compute_sdk.serialize import CombinedCode
-from dagster import graph, op, In
+from dagster import graph, op, In, Out, Nothing, MetadataValue
 from dagster_celery_k8s import celery_k8s_job_executor
 from ..resources.imqcam_girder_resource import IMQCAMGirderResource
 
 # constants
 DEF_ENDPOINT_ID = "f7475479-8822-4c1d-a909-9c15714f92bc"
 
-# pylint: disable=import-outside-toplevel
+# pylint: disable=unused-argument, import-outside-toplevel, multiple-imports, no-value-for-parameter
 
 
-@op(
-    ins={
-        "remote_workdir_root": In(str),
-        "girder_input_folder": In(str),
-        "docker_image": In(str),
-        "endpoint_id": In(str),
-    }
-)
-def run_cmrl(
-    context,  # pylint: disable=unused-argument
-    imqcam_girder: IMQCAMGirderResource,
-    remote_workdir_root: str,
-    girder_input_folder: str,
-    docker_image: str,
-    endpoint_id: str,
-) -> None:
-    # Create the Globus Compute client and Executor
-    # (env vars for client ID and secret must be set)
+def get_globus_compute_executor(endpoint_id: str) -> Executor:
+    """Create the Globus Compute client and return an Executor linked to the given
+    endpoint ID (env vars for client ID and secret must be set)
+    """
     gc = Client(code_serialization_strategy=CombinedCode())
     print(f"Endpoint status: {gc.get_endpoint_status(endpoint_id)}")
-    gce = Executor(endpoint_id=endpoint_id, client=gc)
+    return Executor(endpoint_id=endpoint_id, client=gc)
 
-    # create the remote workingdir
+
+@op(ins={"remote_workdir_root": In(str), "endpoint_id": In(str)}, out=Out(str))
+def create_remote_workdir(context, remote_workdir_root: str, endpoint_id: str) -> str:
+    """Create the remote working directory for a specific run inside the given 'root' dir
+    and return the path to it as a string
+    """
+    gce = get_globus_compute_executor(endpoint_id)
+
     def create_workdir(root_dir):
         import pathlib, datetime
 
@@ -56,7 +49,28 @@ def run_cmrl(
 
     create_workdir_future = gce.submit(create_workdir, remote_workdir_root)
     workdir_path_str = create_workdir_future.result()
-    # copy files in the input folder on Girder to the remote workdir
+    return workdir_path_str
+
+
+@op(
+    ins={
+        "workdir_path_str": In(str),
+        "girder_input_folder": In(str),
+        "endpoint_id": In(str),
+    },
+    out={"done": Out(Nothing)},
+)
+def copy_input_files(
+    context,
+    imqcam_girder: IMQCAMGirderResource,
+    workdir_path_str: str,
+    girder_input_folder: str,
+    endpoint_id: str,
+) -> None:
+    """Copy all the files directly inside the "girder_input_folder" folder to the workdir
+    at "workdir_path_str"
+    """
+    gce = get_globus_compute_executor(endpoint_id)
     input_file_names_and_ids = imqcam_girder.get_folder_file_names_and_ids(
         girder_input_folder
     )
@@ -83,11 +97,69 @@ def run_cmrl(
             file_name,
             file_id,
         )
-        for file_name, file_id in input_file_names_and_ids
+        for file_name, file_id in input_file_names_and_ids.items()
     ]
     concurrent.futures.wait(file_download_futures)
 
-    # pull the image
+
+@op(
+    ins={
+        "workdir_path_str": In(str),
+        "endpoint_id": In(str),
+    },
+    out={"done": Out(Nothing)},
+)
+def write_run_script(
+    context,
+    workdir_path_str: str,
+    endpoint_id: str,
+) -> None:
+    """Write the run_script.sh file in the workdir and chmod it to be executable"""
+    gce = get_globus_compute_executor(endpoint_id)
+
+    def write_and_chmod_run_script(remote_workdir):
+        import os, inspect, stat
+
+        os.chdir(remote_workdir)
+        run_script_text = inspect.cleandoc(
+            r"""#!/bin/bash
+            echo "setting env"
+            source set_env.sh
+            echo "loading module"
+            ml standard/2023.0
+            echo "running exe"
+            mpirun -genv I_MPI_DEBUG=5 -launcher fork -np 4 /home/app/cmrl/bin/MainFiniteElementCmrl.exe
+            echo "done"
+            exit 0
+            """
+        )
+        with open("run_script.sh", "w") as fp:
+            fp.write(run_script_text)
+        os.chmod(
+            "run_script.sh",
+            os.stat("run_script.sh").st_mode
+            | stat.S_IXUSR
+            | stat.S_IXGRP
+            | stat.S_IXOTH,
+        )
+
+    future = gce.submit(write_and_chmod_run_script, workdir_path_str)
+    print(future.result())
+
+
+@op(
+    ins={"workdir_path_str": In(str), "docker_image": In(str), "endpoint_id": In(str)},
+    out={"done": Out(Nothing)},
+)
+def pull_docker_image(
+    context,
+    workdir_path_str: str,
+    docker_image: str,
+    endpoint_id: str,
+) -> None:
+    """Pull the given docker image using singularity on the remote Globus Compute node"""
+    gce = get_globus_compute_executor(endpoint_id)
+
     def pull_image(remote_workdir, image):
         import os
 
@@ -98,25 +170,87 @@ def run_cmrl(
     pull_image_future = gce.submit(pull_image, workdir_path_str, docker_image)
     print(pull_image_future.result())
 
+
+@op(
+    ins={
+        "workdir_path_str": In(str),
+        "endpoint_id": In(str),
+        "copy_input_done": In(Nothing),
+        "write_run_script_done": In(Nothing),
+        "image_pull_done": In(Nothing),
+    },
+    out=Out(str),
+)
+def run_cmrl_simulation(
+    context,
+    workdir_path_str: str,
+    endpoint_id: str,
+) -> str:
+    """Hit the Globus compute endpoint to run the simulation through the downloaded
+    docker image using singularity
+    """
+    gce = get_globus_compute_executor(endpoint_id)
+
     # run the simulation
     def run_simulation(remote_workdir):
         import os
 
+        os.chdir(remote_workdir)
         cmd = (
             "source ~/.bash_profile && "
-            f"cd {remote_workdir} && "
-            'singularity exec --bind "$(pwd):/scratch" image.sif ./run_script.sh'
+            'singularity exec --bind "$(pwd):/scratch" ./image.sif ./run_script.sh'
         )
         return os.popen(cmd).read()
 
-    run_simulation_future = gce.submit(run_simulation)
-    print(run_simulation_future.result())
+    run_simulation_future = gce.submit(run_simulation, workdir_path_str)
+    result = run_simulation_future.result()
+    if context is not None:
+        context.add_output_metadata(
+            metadata={"simulation_output": MetadataValue.md(result)}
+        )
+    return result
 
 
-@graph
-def cmrl_graph():
-    # pylint: disable=no-value-for-parameter
-    run_cmrl()
+@graph(
+    ins={
+        "remote_workdir_root": In(str),
+        "girder_input_folder": In(str),
+        "docker_image": In(str),
+        "endpoint_id": In(str),
+    }
+)
+def cmrl_graph(
+    remote_workdir_root: str,
+    girder_input_folder: str,
+    docker_image: str,
+    endpoint_id: str,
+):
+    "The ops above collected into a single graph"
+    workdir_path_str = create_remote_workdir(
+        remote_workdir_root=remote_workdir_root, endpoint_id=endpoint_id
+    )
+    copy_input_done = copy_input_files(
+        workdir_path_str=workdir_path_str,
+        girder_input_folder=girder_input_folder,
+        endpoint_id=endpoint_id,
+    )
+    write_run_script_done = write_run_script(
+        workdir_path_str=workdir_path_str,
+        endpoint_id=endpoint_id,
+    )
+    image_pull_done = pull_docker_image(
+        workdir_path_str=workdir_path_str,
+        docker_image=docker_image,
+        endpoint_id=endpoint_id,
+    )
+    # pylint: disable=unexpected-keyword-arg
+    run_cmrl_simulation(
+        workdir_path_str=workdir_path_str,
+        endpoint_id=endpoint_id,
+        copy_input_done=copy_input_done,
+        write_run_script_done=write_run_script_done,
+        image_pull_done=image_pull_done,
+    )
 
 
 cmrl_job = cmrl_graph.to_job(
@@ -124,15 +258,11 @@ cmrl_job = cmrl_graph.to_job(
     description="Proof-of-concept CMRL workflow with Globus Compute",
     executor_def=celery_k8s_job_executor,
     config={
-        "ops": {
-            "run_cmrl": {
-                "inputs": {
-                    "remote_workdir_root": "/home/neminiz1/remote_cmrl_workdir",
-                    "girder_input_folder": "Eminizer/cmrl_example/input",
-                    "docker_image": "archrockfish/vanderbilt:240703",
-                    "endpoint_id": DEF_ENDPOINT_ID,
-                },
-            },
+        "inputs": {
+            "remote_workdir_root": "/home/neminiz1/remote_cmrl_workdir",
+            "girder_input_folder": "Eminizer/cmrl_example/input",
+            "docker_image": "archrockfish/vanderbilt:240703",
+            "endpoint_id": DEF_ENDPOINT_ID,
         },
         "execution": {
             "config": {
