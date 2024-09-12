@@ -25,6 +25,34 @@ class IMQCAMGirderResource(ConfigurableResource):
     def setup_for_execution(self, context) -> None:  # pylint: disable=unused-argument
         self._client = girder_client.GirderClient(apiUrl=self.api_url)
 
+    def get_folder_id(
+        self,
+        girder_folder_path: str,
+        create_if_not_found=False,
+        create_as_public=True,
+    ) -> str:
+        """Return the ID of the Girder folder at the given path
+
+        Args:
+            girder_folder_path (str): The path to the folder in Girder as a string
+                formatted like [collection_name]/path/to/folder
+            create_if_not_found (bool): If True, nested Folders will be created leading
+                to the given Folder path
+            create_as_public (bool): If True, any nested Folders created will be public
+
+        Returns:
+            str: The ID of the folder
+        """
+        collection_name, rel_folder_path = self._get_collection_name_and_rel_path(
+            girder_folder_path
+        )
+        return self._get_folder_id(
+            rel_folder_path,
+            collection_name=collection_name,
+            create_if_not_found=create_if_not_found,
+            create_as_public=create_as_public,
+        )
+
     def get_folder_file_names_and_ids(self, girder_folder_path: str) -> Dict[str, str]:
         """Return a dictionary of file IDs keyed by filename for all files inside the given
         folder path on Girder. Only returns entries for files directly inside the given
@@ -38,26 +66,22 @@ class IMQCAMGirderResource(ConfigurableResource):
             Dict[str: str]: A dictionary of file IDs keyed by their names for files
                 directly inside girder_folder_path (not nested further in subfolders)
         """
-        # parse the folder path to get the collection name, and relative path to the folder
-        collection_name, rel_folder_path = self._get_collection_name_and_rel_path(
-            girder_folder_path
-        )
-        folder_id = self._get_folder_id(
-            rel_folder_path, collection_name=collection_name
-        )
+        folder_id = self.get_folder_id(girder_folder_path)
         file_names_ids = {}
         for item_resp in self._client.listItem(folder_id):
             for file_resp in self._client.listFile(item_resp["_id"]):
                 file_names_ids[file_resp["name"]] = file_resp["_id"]
         return file_names_ids
 
-    def get_dataframe_from_girder_csv_file(self, girder_file_path: str) -> pd.DataFrame:
+    def get_dataframe_from_girder_csv_file(self, girder_file_path: str, **read_csv_kwargs) -> pd.DataFrame:
         """Read the file at girder_file_path as a CSV and return its contents
         as a pandas dataframe
 
         Args:
             girder_file_path (str): The path to the file in Girder as a string formatted
                 like [collection_name]/path/to/file.csv
+            read_csv_kwargs (Dict[str, Any]): additional keyword args are passed to
+                pandas.read_csv
 
         Returns:
             pandas.DataFrame: The contents of the file read into a pandas dataframe
@@ -71,7 +95,7 @@ class IMQCAMGirderResource(ConfigurableResource):
         file_contents = self._client.downloadFileAsIterator(file_id)
         file_data = b"".join(chunk for chunk in file_contents)
         # make the file into a DataFrame and return it
-        df = pd.read_csv(BytesIO(file_data))
+        df = pd.read_csv(BytesIO(file_data), **read_csv_kwargs)
         return df
 
     def write_dataframe_to_girder_file(
@@ -114,7 +138,10 @@ class IMQCAMGirderResource(ConfigurableResource):
 
     def _get_collection_name_and_rel_path(self, girder_path):
         # parse the path to get the collection name and relative path to the file
-        path_split = girder_path.split("/")
+        if isinstance(girder_path, str):
+            path_split = girder_path.split("/")
+        else:
+            path_split = [str(part) for part in girder_path.parts]
         if len(path_split) < 2:
             raise ValueError(
                 (
