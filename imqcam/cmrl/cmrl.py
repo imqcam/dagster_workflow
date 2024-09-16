@@ -1,4 +1,4 @@
-"An example of a CMRL workflow"
+"An example of a JHU Computational Mechanics Research Laboratory (CMRL) workflow"
 
 # imports
 import pathlib
